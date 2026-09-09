@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Study Session</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a1220">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Study Session">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a1220;
+    --surface:#111c30;
+    --surface-2:#16233c;
+    --line:#223353;
+    --chalk:#eef2f8;
+    --chalk-dim:#7e8fae;
+    --accent:#2de0c7;
+    --accent-ink:#062420;
+    --danger:#ff4d4d;
+    --warning:#ffc93c;
+    --warning-ink:#241a00;
+    --ok:#12876f;
+    --outlook:#3a4a72;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--chalk);font-family:'Inter',sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent;}
+  .hazard{height:7px;width:100%;background:repeating-linear-gradient(135deg, var(--accent) 0 14px, var(--bg) 14px 28px);}
+  #app{max-width:560px;margin:0 auto;padding:24px 18px 70px;min-height:100vh;}
+  h1,h2,h3{font-family:'Bebas Neue',sans-serif;letter-spacing:0.02em;margin:0;line-height:0.95;}
+  h1{font-size:clamp(2.1rem,8vw,2.8rem);}
+  p{margin:0;line-height:1.5;}
+  .dim{color:var(--chalk-dim);}
+  .tagline{color:var(--chalk-dim);font-size:0.92rem;margin-top:6px;}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:10px;}
+  .header .kicker{color:var(--accent);font-weight:700;font-size:0.8rem;margin-bottom:4px;}
+  .icon-btn{background:var(--surface);border:1px solid var(--line);border-radius:6px;width:40px;height:40px;
+    display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--chalk);cursor:pointer;flex-shrink:0;}
+
+  .back{color:var(--chalk-dim);font-size:0.9rem;font-weight:600;background:none;border:none;cursor:pointer;
+    padding:0 0 18px 0;display:flex;align-items:center;gap:6px;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;border-radius:6px;
+    font-family:'Inter',sans-serif;font-weight:700;font-size:1rem;padding:15px 22px;cursor:pointer;width:100%;}
+  .btn-primary{background:var(--accent);color:var(--accent-ink);}
+  .btn-ghost{background:transparent;color:var(--chalk);border:1px solid var(--line);}
+  .btn-danger{background:transparent;color:var(--danger);border:1px solid #4a2622;}
+  .btn-row{display:flex;gap:10px;margin-top:20px;}
+  .btn-row .btn{width:auto;flex:1;}
+
+  /* week strip */
+  .week-strip{display:flex;gap:6px;margin-bottom:20px;}
+  .week-day{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+    padding:8px 2px 6px;text-align:center;cursor:pointer;position:relative;}
+  .week-day .wd-label{font-size:0.62rem;color:var(--chalk-dim);}
+  .week-day .wd-num{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;margin-top:2px;}
+  .week-day.selected{border-color:var(--accent);}
+  .week-day.selected .wd-num{color:var(--accent);}
+  .week-day.today .wd-num{text-decoration:underline;text-decoration-color:var(--accent);}
+  .week-day .wd-dot{width:6px;height:6px;border-radius:50%;margin:4px auto 0;}
+  .week-day .wd-dot.ok{background:var(--ok);}
+  .week-day .wd-dot.urgent{background:var(--danger);}
+
+  .section-title{font-size:0.78rem;color:var(--chalk-dim);font-weight:700;margin-bottom:10px;margin-top:22px;}
+
+  .agenda-row{display:flex;align-items:flex-start;gap:12px;background:var(--surface);border:1px solid var(--line);
+    border-left-width:4px;border-radius:6px;padding:13px 14px;margin-bottom:9px;}
+  .agenda-row.routine{border-left-color:var(--accent);}
+  .agenda-row.urgent{border-left-color:var(--danger);}
+  .agenda-row.soon{border-left-color:var(--warning);}
+  .agenda-row.normal{border-left-color:var(--accent);}
+  .agenda-row.done{border-left-color:var(--ok);opacity:0.65;}
+  .agenda-row.outlook{border-left-color:var(--outlook);background:var(--surface-2);}
+  .agenda-check{width:24px;height:24px;border-radius:6px;border:2px solid var(--line);flex-shrink:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--accent-ink);margin-top:2px;}
+  .agenda-check.checked{background:var(--ok);border-color:var(--ok);color:#fff;}
+  .agenda-info{flex:1;min-width:0;}
+  .agenda-info .name{font-weight:700;font-size:0.94rem;}
+  .agenda-info .sub{font-size:0.78rem;color:var(--chalk-dim);margin-top:2px;}
+  .agenda-info .name.strike{text-decoration:line-through;}
+  .agenda-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0;}
+  .mini-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--chalk);border-radius:5px;
+    padding:6px 9px;font-size:0.72rem;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .mini-btn.accent{color:var(--accent);border-color:#1c4a42;}
+  .outlook-tag{font-size:0.65rem;color:var(--outlook);font-weight:700;background:#1a2540;border-radius:4px;padding:2px 6px;}
+  .empty-day{color:var(--chalk-dim);font-size:0.88rem;text-align:center;padding:24px 0;}
+
+  .fab-row{display:flex;gap:10px;margin-top:22px;}
+  .fab{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:14px;
+    text-align:center;font-weight:700;font-size:0.88rem;cursor:pointer;}
+  .fab.primary{background:var(--accent);color:var(--accent-ink);border:none;}
+
+  .stats-card{display:flex;gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    padding:16px;margin-bottom:16px;}
+  .stats-card .stat-block{flex:1;text-align:center;}
+  .stats-card .flame{font-size:1.4rem;font-weight:800;}
+  .stats-card .points{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--accent);}
+  .stats-card .stat-sub{font-size:0.7rem;color:var(--chalk-dim);margin-top:2px;}
+
+  /* forms */
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:0.8rem;color:var(--chalk-dim);margin-bottom:6px;font-weight:600;}
+  .field input, .field select{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+    color:var(--chalk);padding:12px 14px;font-size:0.95rem;font-family:'Inter',sans-serif;}
+  .field input::-webkit-calendar-picker-indicator{filter:invert(1);}
+
+  .settings-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface);
+    border:1px solid var(--line);border-radius:6px;padding:14px;margin-bottom:10px;}
+  .settings-row .label{font-weight:700;font-size:0.9rem;}
+  .settings-row .sub{font-size:0.76rem;color:var(--chalk-dim);margin-top:2px;}
+  .switch{width:44px;height:26px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line);
+    position:relative;cursor:pointer;flex-shrink:0;}
+  .switch::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
+    background:var(--chalk-dim);transition:all .15s ease;}
+  .switch.on{background:var(--accent);border-color:var(--accent);}
+  .switch.on::after{left:20px;background:var(--accent-ink);}
+  .time-input{margin-top:10px;width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;
+    color:var(--chalk);padding:10px;font-size:0.95rem;}
+
+  .outlook-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px;}
+  .outlook-status{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:0.88rem;font-weight:700;}
+  .status-dot{width:9px;height:9px;border-radius:50%;}
+  .status-dot.connected{background:var(--ok);}
+  .status-dot.disconnected{background:var(--chalk-dim);}
+
+  /* focus mode */
+  .focus-wrap{min-height:calc(100vh - 88px);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;gap:18px;}
+  .focus-label{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.8rem,8vw,2.4rem);}
+  .focus-digits{font-family:'Bebas Neue',sans-serif;font-variant-numeric:tabular-nums;
+    font-size:clamp(4.5rem,26vw,7rem);line-height:1;}
+  .focus-digits.urgent{color:var(--danger);}
+  .focus-setup input{width:120px;text-align:center;font-size:1.6rem;font-family:'Bebas Neue',sans-serif;
+    background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--chalk);padding:10px;}
+
+  /* history */
+  .history-summary{display:flex;gap:10px;margin-bottom:22px;}
+  .history-summary .stat{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:6px;
+    padding:14px 8px;text-align:center;}
+  .history-summary .stat .n{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--accent);}
+  .history-summary .stat .l{font-size:0.66rem;color:var(--chalk-dim);margin-top:2px;}
+  .day-heading{font-size:0.78rem;font-weight:700;color:var(--chalk-dim);margin:18px 0 8px;}
+  .log-row{display:flex;justify-content:space-between;background:var(--surface);border:1px solid var(--line);
+    border-radius:6px;padding:10px 14px;margin-bottom:7px;font-size:0.88rem;}
+  .log-row .pts{color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:1.1rem;}
+  .empty-history{color:var(--chalk-dim);text-align:center;padding:40px 0;font-size:0.9rem;}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div id="app"></div>
+
+<script>
+/* ===================== CONFIG ===================== */
+// Si tu configures la variable d'environnement Netlify APP_SECRET, remplace cette valeur
+// par la même chaîne ici pour protéger l'accès à tes fonctions serveur (Outlook, notifications).
+const APP_SECRET = '';
+
+const VAPID_PUBLIC_KEY = 'BLngSjcFzRJqhphJXcVoS5pTQwn8ZxS_kwHefnqdLEAGxxY8yClDZiaxEOXTFemBlvJnjrVqP3PIzY9dY2j1HeA';
+
+/* ===================== DATE HELPERS ===================== */
+function pad(n){ return String(n).padStart(2,'0'); }
+function dateKey(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function parseKey(key){ const [y,m,d]=key.split('-').map(Number); return new Date(y,m-1,d); }
+function todayStr(){ return dateKey(new Date()); }
+function daysBetween(aKey,bKey){ return Math.round((parseKey(bKey)-parseKey(aKey))/86400000); }
+function addDays(d,n){ const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function startOfWeek(d){ // lundi
+  const day = d.getDay(); // 0=dim
+  const diff = day===0 ? -6 : 1-day;
+  return addDays(d, diff);
+}
+const DOW_LABELS = ['D','L','M','M','J','V','S'];
+const MONTH_NAMES = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function fmtTimer(sec){ sec=Math.max(0,Math.ceil(sec)); const m=Math.floor(sec/60), s=sec%60; return m+':'+pad(s); }
+
+/* ===================== ROUTINE RULES ===================== */
+const BLOCK_LABELS = { cours:'Cours de maths', travail:'Travail pour demain', qcm:'Révision QCM de la semaine' };
+const BLOCK_POINTS = { cours:15, travail:30, qcm:50 };
+
+function defaultSettings(){
+  return {
+    times:{ cours:'17:00', travail:'18:00', qcm:'10:00', sundayCours:'17:00' },
+    durations:{ cours:30, travail:60, qcm:90, sundayCours:20 }
+  };
+}
+function blocksForDate(d){
+  const s = profile.settings;
+  const dow = d.getDay(); // 0 dim ... 6 sam
+  if(dow === 0){
+    return [{type:'cours', label:'Cours de maths (léger)', duration:s.durations.sundayCours, time:s.times.sundayCours}];
+  }
+  if(dow === 6){
+    return [
+      {type:'cours', label:BLOCK_LABELS.cours, duration:s.durations.cours, time:s.times.cours},
+      {type:'travail', label:BLOCK_LABELS.travail, duration:s.durations.travail, time:s.times.travail},
+      {type:'qcm', label:BLOCK_LABELS.qcm, duration:s.durations.qcm, time:s.times.qcm},
+    ];
+  }
+  return [
+    {type:'cours', label:BLOCK_LABELS.cours, duration:s.durations.cours, time:s.times.cours},
+    {type:'travail', label:BLOCK_LABELS.travail, duration:s.durations.travail, time:s.times.travail},
+  ];
+}
+function pointsForBlock(type, date){
+  if(type==='cours' && parseKey(date).getDay()===0) return 10; // dimanche allégé
+  return BLOCK_POINTS[type] || 15;
+}
+
+/* ===================== STATE ===================== */
+let profile = null;
+let view = 'week';
+let selectedDateKey = todayStr();
+let outlookCache = {}; // weekKey -> events[]
+let outlookConnected = false;
+let focusCtx = null; // {label, linkedType, linkedId, minutes}
+let focusRemaining = 0;
+let focusTotal = 0;
+let focusPaused = false;
+let focusStart = 0;
+let focusHandle = null;
+let reminderMsg = '';
+let editingTask = null;
+
+/* ===================== STORAGE ===================== */
+const LOCAL_KEY = 'study-session-profile';
+function defaultProfile(){
+  return { points:0, streak:0, longestStreak:0, tasks:[], doneBlocks:[], log:[],
+    settings:defaultSettings(), remindersEnabled:false, reminderTime:'19:00' };
+}
+async function loadProfile(){
+  if(window.storage){
+    try{
+      const res = await window.storage.get('profile', false);
+      if(res && res.value) return {...defaultProfile(), ...JSON.parse(res.value)};
+      return defaultProfile();
+    }catch(e){}
+  }
+  try{
+    const raw = localStorage.getItem(LOCAL_KEY);
+    if(raw) return {...defaultProfile(), ...JSON.parse(raw)};
+  }catch(e){}
+  return defaultProfile();
+}
+async function saveProfile(p){
+  if(window.storage){
+    try{ await window.storage.set('profile', JSON.stringify(p), false); return; }catch(e){}
+  }
+  try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(p)); }catch(e){}
+}
+
+/* ===================== AUDIO / HAPTICS ===================== */
+let actx;
+function beep(freq=880,dur=0.12,vol=0.18){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.frequency.value=freq; o.type='sine'; g.gain.value=vol;
+    o.connect(g); g.connect(actx.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.001, actx.currentTime+dur);
+    o.stop(actx.currentTime+dur+0.02);
+  }catch(e){}
+}
+function vibrate(p){ if(navigator.vibrate){ try{navigator.vibrate(p);}catch(e){} } }
+
+/* ===================== PUSH NOTIFICATIONS ===================== */
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+function localTimeToUTC(hhmm){
+  const [h,m]=hhmm.split(':').map(Number);
+  const d=new Date(); d.setHours(h,m,0,0);
+  return { hourUTC:d.getUTCHours(), minuteUTC:d.getUTCMinutes() };
+}
+async function apiFetch(path, opts={}){
+  const headers = Object.assign({}, opts.headers||{});
+  if(APP_SECRET) headers['x-app-secret'] = APP_SECRET;
+  return fetch(path, {...opts, headers});
+}
+async function subscribeToPush(reminderTime){
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if(!sub){
+    sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+  }
+  const {hourUTC,minuteUTC} = localTimeToUTC(reminderTime);
+  await apiFetch('/.netlify/functions/subscribe', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ subscription: sub.toJSON(), hourUTC, minuteUTC })
+  });
+  return sub;
+}
+async function unsubscribeFromPush(){
+  if(!('serviceWorker' in navigator)) return;
+  try{
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if(sub){
+      await apiFetch('/.netlify/functions/unsubscribe', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ endpoint: sub.endpoint })
+      });
+      await sub.unsubscribe();
+    }
+  }catch(e){}
+}
+async function toggleReminders(){
+  reminderMsg = '';
+  if(!profile.remindersEnabled){
+    if('Notification' in window && Notification.requestPermission){
+      try{
+        const perm = await Notification.requestPermission();
+        if(perm !== 'granted'){ reminderMsg = "Autorise les notifications dans ton navigateur."; renderSettings(); return; }
+      }catch(e){}
+    }
+    profile.remindersEnabled = true;
+    try{
+      const sub = await subscribeToPush(profile.reminderTime);
+      if(sub) reminderMsg = "Rappel activé — notification même appli fermée.";
+    }catch(e){ reminderMsg = "Rappel activé en mode local seulement."; }
+  } else {
+    profile.remindersEnabled = false;
+    await unsubscribeFromPush();
+  }
+  await saveProfile(profile);
+  renderSettings();
+}
+async function setReminderTime(val){
+  profile.reminderTime = val;
+  await saveProfile(profile);
+  if(profile.remindersEnabled){ try{ await subscribeToPush(val); }catch(e){} }
+}
+
+/* ===================== OUTLOOK ===================== */
+async function checkOutlookStatus(){
+  try{
+    const res = await apiFetch('/.netlify/functions/outlook-status');
+    const data = await res.json();
+    outlookConnected = !!data.connected;
+  }catch(e){ outlookConnected = false; }
+}
+function connectOutlook(){ window.location.href = '/.netlify/functions/auth-start'; }
+async function disconnectOutlook(){
+  try{ await apiFetch('/.netlify/functions/disconnect-outlook', {method:'POST'}); }catch(e){}
+  outlookConnected = false;
+  outlookCache = {};
+  renderSettings();
+}
+async function fetchOutlookWeek(weekStartDate){
+  const key = dateKey(weekStartDate);
+  if(outlookCache[key]) return outlookCache[key];
+  const start = weekStartDate.toISOString();
+  const end = addDays(weekStartDate,7).toISOString();
+  try{
+    const res = await apiFetch(`/.netlify/functions/get-outlook-events?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+    const data = await res.json();
+    outlookConnected = !!data.connected;
+    outlookCache[key] = data.events || [];
+  }catch(e){
+    outlookCache[key] = [];
+  }
+  return outlookCache[key];
+}
+
+/* ===================== TASKS & POINTS ===================== */
+function taskPoints(task){ return Math.min(40, Math.max(10, Math.round(task.duration/2))); }
+function taskUrgencyClass(task){
+  if(task.done) return 'done';
+  const today = todayStr();
+  if(task.dueDate <= today) return 'urgent';
+  return daysBetween(today, task.dueDate) <= 2 ? 'soon' : 'normal';
+}
+function mandatoryTypesFor(d){ return blocksForDate(d).map(b=>b.type); }
+function dayComplete(key){
+  const types = mandatoryTypesFor(parseKey(key));
+  return types.every(t => profile.doneBlocks.includes(key+':'+t));
+}
+function recomputeStreak(){
+  let d = new Date();
+  if(!dayComplete(dateKey(d))) d = addDays(d,-1);
+  let streak = 0;
+  while(dayComplete(dateKey(d))){ streak++; d = addDays(d,-1); }
+  profile.streak = streak;
+  profile.longestStreak = Math.max(profile.longestStreak||0, streak);
+}
+function addLog(key, date, label, points){
+  profile.log.push({key, date, label, points, ts:Date.now()});
+}
+function removeLog(key){
+  const idx = profile.log.findIndex(l=>l.key===key);
+  if(idx>-1){ const pts = profile.log[idx].points; profile.log.splice(idx,1); return pts; }
+  return 0;
+}
+async function toggleBlockDone(date, type){
+  const key = date+':'+type;
+  const logKey = 'block:'+key;
+  const idx = profile.doneBlocks.indexOf(key);
+  if(idx===-1){
+    profile.doneBlocks.push(key);
+    const pts = pointsForBlock(type,date);
+    profile.points += pts;
+    addLog(logKey, date, BLOCK_LABELS[type] || type, pts);
+  } else {
+    profile.doneBlocks.splice(idx,1);
+    profile.points -= removeLog(logKey);
+  }
+  recomputeStreak();
+  await saveProfile(profile);
+  renderWeek();
+}
+async function toggleTaskDone(taskId){
+  const t = profile.tasks.find(x=>x.id===taskId);
+  if(!t) return;
+  const logKey = 'task:'+taskId;
+  t.done = !t.done;
+  if(t.done){
+    const pts = taskPoints(t);
+    profile.points += pts;
+    addLog(logKey, t.date, t.title, pts);
+  } else {
+    profile.points -= removeLog(logKey);
+  }
+  await saveProfile(profile);
+  renderWeek();
+}
+async function deleteTask(taskId){
+  const t = profile.tasks.find(x=>x.id===taskId);
+  if(t && t.done) profile.points -= removeLog('task:'+taskId);
+  profile.tasks = profile.tasks.filter(x=>x.id!==taskId);
+  await saveProfile(profile);
+  renderWeek();
+}
+
+/* ===================== NAVIGATION ===================== */
+function goWeek(){ view='week'; renderWeek(); }
+function goSettings(){ view='settings'; checkOutlookStatus().then(renderSettings); renderSettings(); }
+function goHistory(){ view='history'; renderHistory(); }
+function goAddTask(id){
+  editingTask = id ? profile.tasks.find(t=>t.id===id) : null;
+  view='addTask'; renderAddTask();
+}
+function selectDate(key){ selectedDateKey = key; renderWeek(); }
+
+/* ===================== RENDER: WEEK ===================== */
+function weekDatesFor(key){
+  const start = startOfWeek(parseKey(key));
+  return Array.from({length:7}, (_,i)=>addDays(start,i));
+}
+async function renderWeek(){
+  const app = document.getElementById('app');
+  const weekDates = weekDatesFor(selectedDateKey);
+  const selectedDate = parseKey(selectedDateKey);
+
+  app.innerHTML = `
+    <div class="header">
+      <div>
+        <div class="kicker">Study Session</div>
+        <h1>Cette semaine</h1>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="icon-btn" onclick="goHistory()" title="Historique">📊</button>
+        <button class="icon-btn" onclick="goSettings()" title="Réglages">⚙️</button>
+      </div>
+    </div>
+
+    <div class="stats-card">
+      <div class="stat-block"><div class="flame">🔥 ${profile.streak||0}</div><div class="stat-sub">jours de suite</div></div>
+      <div class="stat-block"><div class="points">${profile.points||0}</div><div class="stat-sub">points</div></div>
+    </div>
+
+    <div class="week-strip">
+      ${weekDates.map(d => {
+        const key = dateKey(d);
+        const isToday = key===todayStr();
+        const complete = dayComplete(key);
+        const overdue = profile.tasks.some(t=>!t.done && t.dueDate===key && t.dueDate<=todayStr());
+        return `<div class="week-day ${key===selectedDateKey?'selected':''} ${isToday?'today':''}" onclick="selectDate('${key}')">
+          <div class="wd-label">${DOW_LABELS[d.getDay()]}</div>
+          <div class="wd-num">${d.getDate()}</div>
+          <div class="wd-dot ${complete?'ok':(overdue?'urgent':'')}"></div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div id="agendaZone">${renderAgendaHtml(selectedDate)}</div>
+
+    <div class="fab-row">
+      <div class="fab" onclick="startFocus(null)">🎯 Focus libre</div>
+      <div class="fab primary" onclick="goAddTask()">+ Ajouter un devoir</div>
+    </div>
+  `;
+
+  // Récupère les événements Outlook de la semaine affichée (asynchrone, ne bloque pas le rendu initial).
+  const weekStart = startOfWeek(selectedDate);
+  fetchOutlookWeek(weekStart).then(() => {
+    if(view==='week'){ document.getElementById('agendaZone').innerHTML = renderAgendaHtml(selectedDate); }
+  });
+}
+
+function renderAgendaHtml(dateObj){
+  const key = dateKey(dateObj);
+  const routine = blocksForDate(dateObj).map(b => ({
+    kind:'routine', sortMin: toMinutes(b.time), ...b, done: profile.doneBlocks.includes(key+':'+b.type)
+  }));
+  const tasks = profile.tasks.filter(t=>t.date===key).map(t => ({
+    kind:'task', sortMin: toMinutes(t.time||'23:59'), ...t
+  }));
+  const weekStart = startOfWeek(dateObj);
+  const outlookEvents = (outlookCache[dateKey(weekStart)]||[]).filter(ev => dateKey(new Date(ev.start))===key)
+    .map(ev => ({ kind:'outlook', sortMin: new Date(ev.start).getHours()*60+new Date(ev.start).getMinutes(), ...ev }));
+
+  const all = [...routine, ...tasks, ...outlookEvents].sort((a,b)=>a.sortMin-b.sortMin);
+
+  if(all.length===0) return `<div class="empty-day">Rien de prévu ce jour-là.</div>`;
+
+  return all.map(item => {
+    if(item.kind==='routine'){
+      return `<div class="agenda-row routine ${item.done?'done':''}">
+        <div class="agenda-check ${item.done?'checked':''}" onclick="toggleBlockDone('${key}','${item.type}')">${item.done?'✓':''}</div>
+        <div class="agenda-info">
+          <div class="name ${item.done?'strike':''}">${item.label}</div>
+          <div class="sub">${item.time} · ${item.duration} min</div>
+        </div>
+        <div class="agenda-actions">
+          <button class="mini-btn accent" onclick="startFocus({label:'${escAttr(item.label)}',linkedType:'block',linkedId:'${key}:${item.type}',minutes:${item.duration}})">Focus</button>
+        </div>
+      </div>`;
+    }
+    if(item.kind==='task'){
+      const cls = taskUrgencyClass(item);
+      return `<div class="agenda-row ${cls}">
+        <div class="agenda-check ${item.done?'checked':''}" onclick="toggleTaskDone('${item.id}')">${item.done?'✓':''}</div>
+        <div class="agenda-info">
+          <div class="name ${item.done?'strike':''}">${item.title}</div>
+          <div class="sub">${item.subject?item.subject+' · ':''}${item.time||''} · ${item.duration} min${item.dueDate!==key?' · échéance '+shortDate(item.dueDate):''}</div>
+        </div>
+        <div class="agenda-actions">
+          <button class="mini-btn accent" onclick="startFocus({label:'${escAttr(item.title)}',linkedType:'task',linkedId:'${item.id}',minutes:${item.duration}})">Focus</button>
+          <button class="mini-btn" onclick="goAddTask('${item.id}')">Modifier</button>
+        </div>
+      </div>`;
+    }
+    // outlook
+    const st = new Date(item.start), en = new Date(item.end);
+    const timeStr = pad(st.getHours())+':'+pad(st.getMinutes())+'–'+pad(en.getHours())+':'+pad(en.getMinutes());
+    return `<div class="agenda-row outlook">
+      <div style="width:24px;text-align:center;flex-shrink:0;">📅</div>
+      <div class="agenda-info">
+        <div class="name">${item.title} <span class="outlook-tag">OUTLOOK</span></div>
+        <div class="sub">${timeStr}${item.location?' · '+item.location:''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toMinutes(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
+function shortDate(key){ const d=parseKey(key); return d.getDate()+' '+MONTH_NAMES[d.getMonth()].slice(0,3); }
+function escAttr(s){ return String(s).replace(/'/g, "\\'"); }
+
+/* ===================== RENDER: ADD / EDIT TASK ===================== */
+function renderAddTask(){
+  const app = document.getElementById('app');
+  const t = editingTask || { title:'', subject:'', dueDate: todayStr(), date: todayStr(), time:'19:30', duration:30 };
+  app.innerHTML = `
+    <button class="back" onclick="goWeek()">‹ Retour</button>
+    <div class="header"><div><div class="kicker">${editingTask?'Modifier':'Nouveau'}</div><h1>Devoir</h1></div></div>
+
+    <div class="field"><label>Titre</label><input id="f-title" type="text" value="${t.title}" placeholder="Ex : Exercices chapitre 4"></div>
+    <div class="field"><label>Matière</label><input id="f-subject" type="text" value="${t.subject}" placeholder="Ex : Maths, Histoire..."></div>
+    <div class="field"><label>Échéance</label><input id="f-due" type="date" value="${t.dueDate}"></div>
+    <div class="field"><label>Jour prévu pour le faire</label><input id="f-date" type="date" value="${t.date}"></div>
+    <div class="field"><label>Heure prévue</label><input id="f-time" type="time" value="${t.time}"></div>
+    <div class="field"><label>Durée estimée (minutes)</label><input id="f-duration" type="number" min="5" step="5" value="${t.duration}"></div>
+
+    <button class="btn btn-primary" onclick="saveTask(${editingTask?`'${editingTask.id}'`:'null'})">${editingTask?'Enregistrer':'Ajouter le devoir'}</button>
+    ${editingTask ? `<button class="btn btn-danger" style="margin-top:10px;" onclick="deleteTask('${editingTask.id}');goWeek();">Supprimer ce devoir</button>` : ''}
+  `;
+}
+async function saveTask(id){
+  const title = document.getElementById('f-title').value.trim();
+  if(!title) return;
+  const data = {
+    title,
+    subject: document.getElementById('f-subject').value.trim(),
+    dueDate: document.getElementById('f-due').value,
+    date: document.getElementById('f-date').value,
+    time: document.getElementById('f-time').value,
+    duration: Math.max(5, parseInt(document.getElementById('f-duration').value,10) || 30),
+  };
+  if(id){
+    const t = profile.tasks.find(x=>x.id===id);
+    Object.assign(t, data);
+  } else {
+    profile.tasks.push({ id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), done:false, ...data });
+  }
+  await saveProfile(profile);
+  selectedDateKey = data.date;
+  goWeek();
+}
+
+/* ===================== RENDER: SETTINGS ===================== */
+function renderSettings(){
+  const app = document.getElementById('app');
+  const s = profile.settings;
+  app.innerHTML = `
+    <button class="back" onclick="goWeek()">‹ Retour</button>
+    <div class="header"><div><div class="kicker">Réglages</div><h1>Ton planning</h1></div></div>
+
+    <div class="section-title" style="margin-top:0;">Horaires par défaut</div>
+    <div class="field"><label>Cours de maths (lun-sam)</label><input type="time" value="${s.times.cours}" onchange="updateTime('cours',this.value)"></div>
+    <div class="field"><label>Travail pour le lendemain (lun-sam)</label><input type="time" value="${s.times.travail}" onchange="updateTime('travail',this.value)"></div>
+    <div class="field"><label>Révision QCM (samedi)</label><input type="time" value="${s.times.qcm}" onchange="updateTime('qcm',this.value)"></div>
+    <div class="field"><label>Cours du dimanche</label><input type="time" value="${s.times.sundayCours}" onchange="updateTime('sundayCours',this.value)"></div>
+
+    <div class="section-title">Durées</div>
+    <div class="field"><label>Durée révision QCM du samedi (min)</label><input type="number" min="15" step="15" value="${s.durations.qcm}" onchange="updateDuration('qcm',this.value)"></div>
+    <div class="field"><label>Durée cours du dimanche (min)</label><input type="number" min="5" step="5" value="${s.durations.sundayCours}" onchange="updateDuration('sundayCours',this.value)"></div>
+
+    <div class="section-title">Rappel quotidien</div>
+    <div class="settings-row">
+      <div><div class="label">Notification programme du jour</div><div class="sub">Fonctionne même appli fermée si activé.</div></div>
+      <button class="switch ${profile.remindersEnabled?'on':''}" onclick="toggleReminders()"></button>
+    </div>
+    ${profile.remindersEnabled ? `<input type="time" class="time-input" value="${profile.reminderTime}" onchange="setReminderTime(this.value)">` : ''}
+    ${reminderMsg ? `<p class="dim" style="font-size:0.8rem;margin-top:8px;">${reminderMsg}</p>` : ''}
+
+    <div class="section-title">Outlook (lecture seule)</div>
+    <div class="outlook-card">
+      <div class="outlook-status">
+        <div class="status-dot ${outlookConnected?'connected':'disconnected'}"></div>
+        ${outlookConnected ? 'Connecté à Outlook' : 'Non connecté'}
+      </div>
+      <p class="dim" style="font-size:0.82rem;margin-bottom:14px;">Tes événements Outlook apparaissent dans ton agenda ici, mais rien n'est jamais modifié sur Outlook.</p>
+      ${outlookConnected
+        ? `<button class="btn btn-ghost" onclick="disconnectOutlook()">Déconnecter Outlook</button>`
+        : `<button class="btn btn-primary" onclick="connectOutlook()">Connecter Outlook</button>`}
+    </div>
+  `;
+}
+async function updateTime(key, val){ profile.settings.times[key]=val; await saveProfile(profile); }
+async function updateDuration(key, val){ profile.settings.durations[key]=Math.max(5,parseInt(val,10)||5); await saveProfile(profile); }
+
+/* ===================== RENDER: HISTORIQUE ===================== */
+function renderHistory(){
+  const app = document.getElementById('app');
+  const byDate = {};
+  profile.log.slice().sort((a,b)=>b.ts-a.ts).forEach(l => { (byDate[l.date] = byDate[l.date]||[]).push(l); });
+  const dateKeys = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+
+  let body = '';
+  if(dateKeys.length===0){
+    body = `<div class="empty-history">Pas encore d'activité enregistrée.<br>Coche ton premier créneau pour commencer.</div>`;
+  } else {
+    dateKeys.forEach(key => {
+      const d = parseKey(key);
+      body += `<div class="day-heading">${d.getDate()} ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}</div>`;
+      byDate[key].forEach(l => {
+        body += `<div class="log-row"><span>${l.label}</span><span class="pts">+${l.points}</span></div>`;
+      });
+    });
+  }
+
+  app.innerHTML = `
+    <button class="back" onclick="goWeek()">‹ Retour</button>
+    <div class="header"><div><div class="kicker">Historique</div><h1>Ton parcours</h1></div></div>
+    <p class="tagline" style="margin-bottom:20px;">🔥 ${profile.streak||0} jour${profile.streak>1?'s':''} de suite · record : ${profile.longestStreak||0}</p>
+    <div class="history-summary">
+      <div class="stat"><div class="n">${profile.tasks.filter(t=>t.done).length}</div><div class="l">devoirs faits</div></div>
+      <div class="stat"><div class="n">${profile.doneBlocks.length}</div><div class="l">créneaux faits</div></div>
+      <div class="stat"><div class="n">${profile.points||0}</div><div class="l">points</div></div>
+    </div>
+    ${body}
+  `;
+}
+
+/* ===================== FOCUS MODE ===================== */
+function startFocus(ctx){
+  focusCtx = ctx; // null = focus libre
+  view = 'focusSetup';
+  renderFocusSetup();
+}
+function renderFocusSetup(){
+  const app = document.getElementById('app');
+  const defaultMin = focusCtx ? focusCtx.minutes : 25;
+  app.innerHTML = `
+    <button class="back" onclick="goWeek()">‹ Retour</button>
+    <div class="focus-wrap focus-setup">
+      <div class="focus-label">${focusCtx ? focusCtx.label : 'Focus libre'}</div>
+      <p class="dim">Combien de minutes ?</p>
+      <input id="focus-minutes" type="number" min="1" value="${defaultMin}">
+      <button class="btn btn-primary" style="max-width:260px;margin-top:20px;" onclick="beginFocusCountdown()">Démarrer</button>
+    </div>
+  `;
+}
+function beginFocusCountdown(){
+  const minutes = Math.max(1, parseInt(document.getElementById('focus-minutes').value,10) || 25);
+  focusTotal = minutes*60;
+  focusRemaining = focusTotal;
+  focusPaused = false;
+  focusStart = Date.now();
+  view = 'focus';
+  renderFocusScreen();
+  if(focusHandle) clearInterval(focusHandle);
+  focusHandle = setInterval(focusTick, 200);
+}
+function focusTick(){
+  if(focusPaused) return;
+  const elapsed = (Date.now()-focusStart)/1000;
+  focusRemaining = Math.max(0, focusTotal-elapsed);
+  const el = document.getElementById('focusDigits');
+  if(el){
+    el.textContent = fmtTimer(focusRemaining);
+    el.classList.toggle('urgent', Math.ceil(focusRemaining)<=10);
+  }
+  if(focusRemaining<=0){
+    clearInterval(focusHandle); focusHandle=null;
+    completeFocus();
+  }
+}
+function toggleFocusPause(){
+  if(!focusPaused){ focusPaused=true; }
+  else{ focusStart = Date.now()-((focusTotal-focusRemaining)*1000); focusPaused=false; }
+  renderFocusScreen();
+}
+function stopFocusEarly(){
+  if(focusHandle){ clearInterval(focusHandle); focusHandle=null; }
+  goWeek();
+}
+async function completeFocus(){
+  beep(1200,0.1); setTimeout(()=>beep(1500,0.2),140);
+  vibrate([150,80,150,80,250]);
+  let pts = 0;
+  if(focusCtx && focusCtx.linkedType==='block'){
+    const [date,type] = focusCtx.linkedId.split(':');
+    if(!profile.doneBlocks.includes(date+':'+type)){
+      profile.doneBlocks.push(date+':'+type);
+      pts = pointsForBlock(type,date);
+      profile.points += pts;
+      addLog('block:'+date+':'+type, date, BLOCK_LABELS[type]||type, pts);
+      recomputeStreak();
+    }
+  } else if(focusCtx && focusCtx.linkedType==='task'){
+    const t = profile.tasks.find(x=>x.id===focusCtx.linkedId);
+    if(t && !t.done){
+      t.done = true;
+      pts = taskPoints(t);
+      profile.points += pts;
+      addLog('task:'+t.id, t.date, t.title, pts);
+    }
+  } else {
+    pts = Math.min(60, Math.max(10, Math.round((focusTotal/60)*1.5)));
+    profile.points += pts;
+    addLog('freefocus:'+Date.now(), todayStr(), 'Focus libre', pts);
+  }
+  await saveProfile(profile);
+  view = 'focusDone';
+  renderFocusDone(pts);
+}
+function renderFocusScreen(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="focus-wrap">
+      <div class="focus-label">${focusCtx ? focusCtx.label : 'Focus libre'}</div>
+      <div class="focus-digits" id="focusDigits">${fmtTimer(focusRemaining)}</div>
+      <div class="btn-row" style="width:100%;max-width:280px;">
+        <button class="btn btn-ghost" onclick="stopFocusEarly()">Arrêter</button>
+        <button class="btn btn-primary" onclick="toggleFocusPause()">${focusPaused?'Reprendre':'Pause'}</button>
+      </div>
+    </div>
+  `;
+}
+function renderFocusDone(pts){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="focus-wrap">
+      <h1>Session terminée</h1>
+      <div class="points" style="font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--accent);">+${pts} points</div>
+      <button class="btn btn-primary" style="max-width:260px;margin-top:10px;" onclick="goWeek()">Retour à l'agenda</button>
+    </div>
+  `;
+}
+
+/* ===================== INIT ===================== */
+(async function init(){
+  profile = await loadProfile();
+  recomputeStreak();
+
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('outlook')==='connected'){ outlookConnected = true; }
+  if(params.get('outlook') || params.get('msg')){ window.history.replaceState({}, '', window.location.pathname); }
+
+  renderWeek();
+})();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
