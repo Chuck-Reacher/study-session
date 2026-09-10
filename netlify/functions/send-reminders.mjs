@@ -44,4 +44,4 @@ export default async () => {
   return new Response(JSON.stringify({ sent }), { headers: { "content-type": "application/json" } });
 };
 
-export const config = { schedule: "* * * * *" };
+export const config = { schedule: "*/15 * * * *" };
