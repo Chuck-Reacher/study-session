@@ -31,7 +31,8 @@ export default async () => {
         JSON.stringify({
           title: "Study Session",
           body: "C'est l'heure de ton programme du jour 📚"
-        })
+        }),
+        { urgency: 'high', TTL: 60 }
       );
       sent++;
     } catch (err) {

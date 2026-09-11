@@ -189,7 +189,8 @@ const BLOCK_POINTS = { cours:15, travail:30, qcm:50 };
 function defaultSettings(){
   return {
     times:{ cours:'17:00', travail:'18:00', qcm:'10:00', sundayCours:'17:00' },
-    durations:{ cours:30, travail:60, qcm:90, sundayCours:20 }
+    durations:{ cours:30, travail:60, qcm:90, sundayCours:20 },
+    icsUrl:''
   };
 }
 function blocksForDate(d){
@@ -220,7 +221,7 @@ let profile = null;
 let view = 'week';
 let selectedDateKey = todayStr();
 let outlookCache = {}; // weekKey -> events[]
-let outlookConnected = false;
+let icsMsg = '';
 let focusCtx = null; // {label, linkedType, linkedId, minutes}
 let focusRemaining = 0;
 let focusTotal = 0;
@@ -364,30 +365,38 @@ async function setReminderTime(val){
   if(profile.remindersEnabled){ try{ await subscribeToPush(val); }catch(e){} }
 }
 
-/* ===================== OUTLOOK ===================== */
-async function checkOutlookStatus(){
-  try{
-    const res = await apiFetch('/.netlify/functions/outlook-status');
-    const data = await res.json();
-    outlookConnected = !!data.connected;
-  }catch(e){ outlookConnected = false; }
-}
-function connectOutlook(){ window.location.href = '/.netlify/functions/auth-start'; }
-async function disconnectOutlook(){
-  try{ await apiFetch('/.netlify/functions/disconnect-outlook', {method:'POST'}); }catch(e){}
-  outlookConnected = false;
+/* ===================== OUTLOOK (lien ICS, sans connexion) ===================== */
+async function saveIcsUrl(url){
+  profile.settings.icsUrl = (url||'').trim();
   outlookCache = {};
+  await saveProfile(profile);
+}
+async function testIcsUrl(){
+  icsMsg = 'Vérification...';
+  renderSettings();
+  const url = profile.settings.icsUrl;
+  if(!url){ icsMsg = "Colle d'abord ton lien ICS Outlook ci-dessus."; renderSettings(); return; }
+  try{
+    const now = new Date();
+    const res = await fetch(`/.netlify/functions/fetch-ics?url=${encodeURIComponent(url)}&start=${now.toISOString()}&end=${addDays(now,7).toISOString()}`);
+    const data = await res.json();
+    if(data.error){ icsMsg = "Échec : " + data.error; }
+    else { icsMsg = `Lien valide — ${data.events.length} événement(s) trouvé(s) sur les 7 prochains jours.`; outlookCache = {}; }
+  }catch(e){
+    icsMsg = "Impossible de contacter la fonction de lecture du calendrier.";
+  }
   renderSettings();
 }
 async function fetchOutlookWeek(weekStartDate){
+  const url = profile.settings.icsUrl;
+  if(!url) return [];
   const key = dateKey(weekStartDate);
   if(outlookCache[key]) return outlookCache[key];
   const start = weekStartDate.toISOString();
   const end = addDays(weekStartDate,7).toISOString();
   try{
-    const res = await apiFetch(`/.netlify/functions/get-outlook-events?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
+    const res = await fetch(`/.netlify/functions/fetch-ics?url=${encodeURIComponent(url)}&start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
     const data = await res.json();
-    outlookConnected = !!data.connected;
     outlookCache[key] = data.events || [];
   }catch(e){
     outlookCache[key] = [];
@@ -466,7 +475,7 @@ async function deleteTask(taskId){
 
 /* ===================== NAVIGATION ===================== */
 function goWeek(){ view='week'; renderWeek(); }
-function goSettings(){ view='settings'; checkOutlookStatus().then(renderSettings); renderSettings(); }
+function goSettings(){ view='settings'; renderSettings(); }
 function goHistory(){ view='history'; renderHistory(); }
 function goAddTask(id){
   editingTask = id ? profile.tasks.find(t=>t.id===id) : null;
@@ -657,16 +666,15 @@ function renderSettings(){
     ${profile.remindersEnabled ? `<button class="btn btn-ghost" style="margin-top:10px;" onclick="testPushNotification()">Envoyer une notification de test</button>` : ''}
     ${reminderMsg ? `<p class="dim" style="font-size:0.8rem;margin-top:8px;">${reminderMsg}</p>` : ''}
 
-    <div class="section-title">Outlook (lecture seule)</div>
+    <div class="section-title">Outlook (lecture seule, via lien ICS)</div>
     <div class="outlook-card">
-      <div class="outlook-status">
-        <div class="status-dot ${outlookConnected?'connected':'disconnected'}"></div>
-        ${outlookConnected ? 'Connecté à Outlook' : 'Non connecté'}
-      </div>
       <p class="dim" style="font-size:0.82rem;margin-bottom:14px;">Tes événements Outlook apparaissent dans ton agenda ici, mais rien n'est jamais modifié sur Outlook.</p>
-      ${outlookConnected
-        ? `<button class="btn btn-ghost" onclick="disconnectOutlook()">Déconnecter Outlook</button>`
-        : `<button class="btn btn-primary" onclick="connectOutlook()">Connecter Outlook</button>`}
+      <div class="field">
+        <label>Lien de calendrier ICS Outlook</label>
+        <input type="text" placeholder="https://outlook.office365.com/owa/calendar/.../calendar.ics" value="${profile.settings.icsUrl||''}" onchange="saveIcsUrl(this.value)">
+      </div>
+      <button class="btn btn-primary" onclick="testIcsUrl()">Vérifier le lien</button>
+      ${icsMsg ? `<p class="dim" style="font-size:0.8rem;margin-top:10px;">${icsMsg}</p>` : ''}
     </div>
   `;
 }
@@ -817,11 +825,6 @@ function renderFocusDone(pts){
 (async function init(){
   profile = await loadProfile();
   recomputeStreak();
-
-  const params = new URLSearchParams(window.location.search);
-  if(params.get('outlook')==='connected'){ outlookConnected = true; }
-  if(params.get('outlook') || params.get('msg')){ window.history.replaceState({}, '', window.location.pathname); }
-
   renderWeek();
 })();
 
