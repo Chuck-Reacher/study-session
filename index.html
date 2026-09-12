@@ -202,8 +202,12 @@ function blocksForDate(d){
   if(dow === 6){
     return [
       {type:'cours', label:BLOCK_LABELS.cours, duration:s.durations.cours, time:s.times.cours},
-      {type:'travail', label:BLOCK_LABELS.travail, duration:s.durations.travail, time:s.times.travail},
       {type:'qcm', label:BLOCK_LABELS.qcm, duration:s.durations.qcm, time:s.times.qcm},
+    ];
+  }
+  if(dow === 5){
+    return [
+      {type:'cours', label:BLOCK_LABELS.cours, duration:s.durations.cours, time:s.times.cours},
     ];
   }
   return [
